@@ -1,0 +1,6 @@
+colorama
+PyYAML
+qbittorrent-api
+dataclass_wizard
+httpx
+
