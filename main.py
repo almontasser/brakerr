@@ -35,18 +35,18 @@ class qBittorrentClient:
         logger.debug(f"<qbit|{url}> Connected to qBittorrent")
 
     def set_download_speed(self, speed: int) -> None:
-        "Set the upload speed limit for the client, in bytes."
+        "Set the download speed limit for the client, in bytes."
         
-        logger.debug(f"<qbit|{self._url}> Setting upload speed to {speed}KBits")
-        self._client.transfer_set_upload_limit(speed * 1024)
+        logger.debug(f"<qbit|{self._url}> Setting download speed to {speed} KBits")
+        self._client.transfer_set_download_limit(int(speed) * 1024)
         
 class JellyfinServer(threading.Thread):
     def __init__(self, url: str, api_key: str, update_interval: int, ignore_paused_after: int, verify_https: bool, update_event: threading.Thread) -> None:
         threading.Thread.__init__(self)
         
         self._api_key = api_key
-        self._ignore_paused_after = ignore_paused_after
-        self._update_interval = update_interval
+        self._ignore_paused_after = int(ignore_paused_after)
+        self._update_interval = int(update_interval)
         self._update_event = update_event
         
         self._client = httpx.Client(
@@ -59,10 +59,8 @@ class JellyfinServer(threading.Thread):
         self._logger_prefix = f"<jellyfin|{url}>"
         
         self._streaming = False
-        self._active_sessions = False
         
         self._prev_streaming = False
-        self._prev_active_sessions = False
         
     def remove_old_paused(self, active_session_ids: list[str]) -> None:
         for session_id in self._paused_since.copy(): # Copy to prevent RuntimeError: dictionary changed size during iteration
@@ -85,6 +83,7 @@ class JellyfinServer(threading.Thread):
         
         session_ids: list[str] = []
         
+        self._streaming = False
         
         for session in res_json:
             if session.get("NowPlayingItem"): # Ignore sessions that aren't playing anything
@@ -100,19 +99,17 @@ class JellyfinServer(threading.Thread):
                     if session_id not in self._paused_since:
                         self._paused_since[session_id] = int(time.time())
                         logger.debug(f"{self._logger_prefix} {title}:{session_id} is paused, noted time")
-                        self._active_sessions = True
+                        self._streaming = True
                     elif int(time.time()) - self._paused_since[session_id] > self._ignore_paused_after:
                         logger.debug(f"{self._logger_prefix} {title}:{session_id} paused for too long")
+                    else:
+                        self._streaming = True
                         
                 elif self._ignore_paused_after != -1:
                     if session_id in self._paused_since:
                         logger.debug(f"{self._logger_prefix} {title}:{session_id} is no longer paused, removing from paused dict")
+                        self._streaming = True
                         del self._paused_since[session_id]
-                        
-                if not paused:
-                    self._active_sessions = True
-                    self._streaming = True
-                    logger.debug(f"{self._logger_prefix} {title}:{session_id} is streaming")
                 
         self.remove_old_paused(session_ids)
 
@@ -123,9 +120,8 @@ class JellyfinServer(threading.Thread):
             except Exception:
                 logger.error(f"{self._logger_prefix} Error getting bandwidth:\n" + traceback.format_exc())
             else:
-                if self._streaming != self._prev_streaming or self._active_sessions != self._prev_active_sessions:
+                if self._streaming != self._prev_streaming:
                     self._prev_streaming = self._streaming
-                    self._prev_active_sessions = self._active_sessions
                     self._update_event.set()
                     
             
@@ -166,11 +162,11 @@ if __name__ == '__main__':
         logger.info("Update event triggered")
         
         if jellyfin._streaming:
-            qbittorrent.set_download_speed(args.qbit_streaming_sessions_limit)
-        elif jellyfin._active_sessions:
-            qbittorrent.set_download_speed(args.qbit_active_sessions_limit)
+            qbittorrent.set_download_speed(args.qbit_speed_limit)
+            logger.info(f"setting qbit_speed_limit {args.qbit_speed_limit}")
         else:
             qbittorrent.set_download_speed(0)
+            logger.info(f"setting qbit_speed_limit 0")
         
-        logger.info("Upload speeds updated")
+        logger.info("Download speeds updated")
         logger.info("Waiting for next update event")

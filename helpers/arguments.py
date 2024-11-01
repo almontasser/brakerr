@@ -41,18 +41,11 @@ def load_args() -> argparse.Namespace:
         default=os.environ.get('BRAKERR_QBIT_PASSWORD')
     )
     argparser.add_argument(
-        '--qbit_active_sessions_limit',
-        dest='qbit_active_sessions_limit',
-        help='Limit when there is active sessions',
-        type=str,
-        default=os.environ.get('BRAKERR_QBIT_ACTIVE_SESSIONS_LIMIT')
-    )
-    argparser.add_argument(
-        '--qbit_streaming_sessions_limit',
-        dest='qbit_streaming_sessions_limit',
+        '--qbit_speed_limit',
+        dest='qbit_speed_limit',
         help='Limit when there is streaming sessions',
         type=str,
-        default=os.environ.get('BRAKERR_QBIT_streaming_SESSIONS_LIMIT')
+        default=os.environ.get('BRAKERR_QBIT_SPEED_LIMIT')
     )
     
     argparser.add_argument(
