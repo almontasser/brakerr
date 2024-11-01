@@ -42,6 +42,8 @@ class qBittorrentClient:
         
 class JellyfinServer(threading.Thread):
     def __init__(self, url: str, api_key: str, update_interval: int, ignore_paused_after: int, verify_https: bool, update_event: threading.Thread) -> None:
+        threading.Thread.__init__(self)
+        
         self._api_key = api_key
         self._ignore_paused_after = ignore_paused_after
         self._update_interval = update_interval
