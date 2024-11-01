@@ -106,9 +106,9 @@ class JellyfinServer(threading.Thread):
                         self._streaming = True
                         
                 elif self._ignore_paused_after != -1:
+                    self._streaming = True
                     if session_id in self._paused_since:
                         logger.debug(f"{self._logger_prefix} {title}:{session_id} is no longer paused, removing from paused dict")
-                        self._streaming = True
                         del self._paused_since[session_id]
                 
         self.remove_old_paused(session_ids)
