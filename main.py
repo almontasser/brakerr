@@ -94,19 +94,20 @@ class JellyfinServer(threading.Thread):
 
         for session in res_json:
             session_id = session["Id"]
-            paused = session["PlayState"]["IsPaused"]
-            title = session["NowPlayingItem"]["Name"]
             last_activity = session["LastActivityDate"]
+            username = session["UserName"]
 
             # last_activity is in the format 2024-11-04T08:45:39.9536253Z
             # Set active session to True if the session last activity is within the ignore_paused_after time
             if self._ignore_paused_after != -1:
                 last_activity_time = datetime.fromisoformat(last_activity).timestamp()
-                logger.debug(f"{self._logger_prefix} {title}:{session_id} last activity: {last_activity_time}")
+                logger.debug(f"{self._logger_prefix} {username}:{session_id} last activity: {last_activity_time}")
                 if int(time.time() - last_activity_time) < self._ignore_paused_after:
                     self._active_session = True
 
             if session.get("NowPlayingItem"):  # Ignore sessions that aren't playing anything
+                paused = session["PlayState"]["IsPaused"]
+                title = session["NowPlayingItem"]["Name"]
                 session_ids.append(session_id)
 
                 if paused and self._ignore_paused_after != -1:
