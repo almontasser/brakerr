@@ -94,7 +94,7 @@ class JellyfinServer(threading.Thread):
 
         for session in res_json:
             session_id = session["Id"]
-            last_activity = session["LastActivityDate"]
+            last_activity = session["LastActivityDate"].replace('Z', '+00:00')
             username = session["UserName"]
 
             # last_activity is in the format 2024-11-04T08:45:39.9536253Z
@@ -136,7 +136,7 @@ class JellyfinServer(threading.Thread):
             try:
                 self.process_sessions()
             except Exception:
-                logger.error(f"{self._logger_prefix} Error getting bandwidth:\n" + traceback.format_exc())
+                logger.error(f"{self._logger_prefix} Error processing sessions:\n" + traceback.format_exc())
             else:
                 if self._streaming != self._prev_streaming or self._active_session != self._prev_active_session:
                     self._prev_active_session = self._active_session
