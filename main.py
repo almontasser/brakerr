@@ -94,7 +94,7 @@ class JellyfinServer(threading.Thread):
 
         for session in res_json:
             session_id = session["Id"]
-            last_activity = session["LastActivityDate"].replace('Z', '+00:00')
+            last_activity = session["LastActivityDate"]
             username = session["UserName"]
 
             # last_activity is in the format 2024-11-04T08:45:39.9536253Z
