@@ -100,10 +100,13 @@ class JellyfinServer(threading.Thread):
 
                 session_ids.append(session_id)
 
-                # last_activity is in the format 2019-08-24T14:15:22Z
+                # last_activity is in the format 2024-11-04T08:45:39.9536253Z
                 # Set active session to True if the session last activity is within the ignore_paused_after time
-                if int(time.time()) - int(time.mktime(time.strptime(last_activity, "%Y-%m-%dT%H:%M:%SZ"))) < self._ignore_paused_after:
-                    self._active_session = True
+                if self._ignore_paused_after != -1:
+                    last_activity_time = time.mktime(time.strptime(last_activity, "%Y-%m-%dT%H:%M:%S.%fZ"))
+                    logger.debug(f"{self._logger_prefix} {title}:{session_id} last activity: {last_activity_time}")
+                    if int(time.time()) - last_activity_time < self._ignore_paused_after:
+                        self._active_session = True
 
                 if paused and self._ignore_paused_after != -1:
                     if session_id not in self._paused_since:
