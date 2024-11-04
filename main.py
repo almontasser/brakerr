@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import httpx
 import threading
 import traceback
@@ -91,22 +93,21 @@ class JellyfinServer(threading.Thread):
         self._streaming = False
 
         for session in res_json:
+            session_id = session["Id"]
+            paused = session["PlayState"]["IsPaused"]
+            title = session["NowPlayingItem"]["Name"]
+            last_activity = session["LastActivityDate"]
+
+            # last_activity is in the format 2024-11-04T08:45:39.9536253Z
+            # Set active session to True if the session last activity is within the ignore_paused_after time
+            if self._ignore_paused_after != -1:
+                last_activity_time = datetime.fromisoformat(last_activity).timestamp()
+                logger.debug(f"{self._logger_prefix} {title}:{session_id} last activity: {last_activity_time}")
+                if int(time.time() - last_activity_time) < self._ignore_paused_after:
+                    self._active_session = True
+
             if session.get("NowPlayingItem"):  # Ignore sessions that aren't playing anything
-                session_id = session["Id"]
-                paused = session["PlayState"]["IsPaused"]
-                session_id = session["Id"]
-                title = session["NowPlayingItem"]["Name"]
-                last_activity = session["LastActivityDate"]
-
                 session_ids.append(session_id)
-
-                # last_activity is in the format 2024-11-04T08:45:39.9536253Z
-                # Set active session to True if the session last activity is within the ignore_paused_after time
-                if self._ignore_paused_after != -1:
-                    last_activity_time = time.mktime(time.strptime(last_activity, "%Y-%m-%dT%H:%M:%S.%fZ"))
-                    logger.debug(f"{self._logger_prefix} {title}:{session_id} last activity: {last_activity_time}")
-                    if int(time.time()) - last_activity_time < self._ignore_paused_after:
-                        self._active_session = True
 
                 if paused and self._ignore_paused_after != -1:
                     if session_id not in self._paused_since:
