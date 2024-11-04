@@ -47,6 +47,13 @@ def load_args() -> argparse.Namespace:
         type=str,
         default=os.environ.get('BRAKERR_QBIT_SPEED_LIMIT')
     )
+    argparser.add_argument(
+        '--qbit_speed_limit_paused',
+        dest='qbit_speed_limit_paused',
+        help='Limit when there is no streaming sessions',
+        type=str,
+        default=os.environ.get('BRAKERR_QBIT_SPEED_LIMIT_PAUSED')
+    )
     
     argparser.add_argument(
         '--jellyfin_url',
