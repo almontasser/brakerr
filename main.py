@@ -87,7 +87,7 @@ class JellyfinServer(threading.Thread):
 
         session_ids: list[str] = []
 
-        self._active_session = len(res_json) > 0
+        self._active_session = False
         self._streaming = False
 
         for session in res_json:
@@ -96,8 +96,14 @@ class JellyfinServer(threading.Thread):
                 paused = session["PlayState"]["IsPaused"]
                 session_id = session["Id"]
                 title = session["NowPlayingItem"]["Name"]
+                last_activity = session["LastActivityDate"]
 
                 session_ids.append(session_id)
+
+                # last_activity is in the format 2019-08-24T14:15:22Z
+                # Set active session to True if the session last activity is within the ignore_paused_after time
+                if int(time.time()) - int(time.mktime(time.strptime(last_activity, "%Y-%m-%dT%H:%M:%SZ"))) < self._ignore_paused_after:
+                    self._active_session = True
 
                 if paused and self._ignore_paused_after != -1:
                     if session_id not in self._paused_since:
@@ -178,13 +184,13 @@ def main():
 
         if jellyfin.streaming:
             qbittorrent.set_download_speed(args.qbit_speed_limit)
-            logger.info(f"Setting Speed to {args.qbit_speed_limit} KBits")
+            logger.info(f"Streaming detected, setting Speed to {args.qbit_speed_limit} KBits")
         elif jellyfin.active_session:
             qbittorrent.set_download_speed(args.qbit_speed_limit_paused)
-            logger.info(f"Setting Speed to {args.qbit_speed_limit_paused} KBits")
+            logger.info(f"Active session detected, setting Speed to {args.qbit_speed_limit_paused} KBits")
         else:
             qbittorrent.set_download_speed(0)
-            logger.info(f"setting qbit_speed_limit 0")
+            logger.info(f"No active sessions, setting Speed to 0 KBits")
 
         logger.info("Download speeds updated")
         logger.info("Waiting for next update event")
